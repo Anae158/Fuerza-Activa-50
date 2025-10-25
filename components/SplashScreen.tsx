@@ -6,7 +6,7 @@ const SplashScreen: React.FC = () => {
     <div className="flex flex-col items-center justify-center h-screen bg-gradient-to-br from-indigo-500 to-purple-600 text-white">
       <div className="text-center animate-fade-in-up">
         <div className="mb-4">
-          <Logo className="h-40" />
+          <Logo />
         </div>
         <p className="mt-4 text-lg md:text-xl text-indigo-100">Preparando tu rutina personalizada...</p>
       </div>

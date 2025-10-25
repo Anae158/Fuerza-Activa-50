@@ -1,4 +1,4 @@
-import { GoogleGenAI, Type } from "@google/genai";
+import { GoogleGenAI, Type, Modality } from "@google/genai";
 import type { Nivel, Plan } from '../types';
 
 const API_KEY = process.env.API_KEY;
@@ -110,5 +110,39 @@ export const generateWorkoutPlan = async (level: Nivel): Promise<Plan> => {
     } catch (error) {
         console.error("Error al generar el plan de ejercicios:", error);
         throw new Error("No se pudo comunicar con el servicio de generación de planes.");
+    }
+};
+
+export const generateSpeech = async (text: string): Promise<string> => {
+    if (!ai) {
+        const errorMessage = "La configuración de la API no está completa.";
+        console.error(errorMessage);
+        throw new Error(errorMessage);
+    }
+
+    try {
+        const response = await ai.models.generateContent({
+            model: "gemini-2.5-flash-preview-tts",
+            contents: [{ parts: [{ text: `Explica este ejercicio de forma clara y concisa para una mujer de más de 50 años: ${text}` }] }],
+            config: {
+                responseModalities: [Modality.AUDIO],
+                speechConfig: {
+                    voiceConfig: {
+                        prebuiltVoiceConfig: { voiceName: 'Kore' },
+                    },
+                },
+            },
+        });
+
+        const base64Audio = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
+
+        if (!base64Audio) {
+            throw new Error("No se recibió audio del servicio.");
+        }
+
+        return base64Audio;
+    } catch (error) {
+        console.error("Error al generar el audio:", error);
+        throw new Error("No se pudo generar la explicación de voz.");
     }
 };

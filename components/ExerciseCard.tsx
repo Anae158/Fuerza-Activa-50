@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import type { Ejercicio } from '../types';
-import { ClockIcon, CheckCircleIcon, PlayCircleIcon, PauseCircleIcon, ResetIcon } from './icons';
+import { generateSpeech } from '../services/geminiService';
+import { playAudioFromBase64 } from '../utils/audioUtils';
+import { ClockIcon, CheckCircleIcon, PlayCircleIcon, PauseCircleIcon, ResetIcon, SpeakerWaveIcon, SpinnerIcon } from './icons';
 
 interface ExerciseCardProps {
   ejercicio: Ejercicio;
@@ -69,6 +71,8 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({ ejercicio }) => {
   const [timeLeft, setTimeLeft] = useState(totalSeconds || 0);
   const [isRunning, setIsRunning] = useState(false);
   const [isCompleted, setIsCompleted] = useState(false);
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const [speechError, setSpeechError] = useState<string | null>(null);
 
   useEffect(() => {
     if (totalSeconds) {
@@ -107,6 +111,23 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({ ejercicio }) => {
        setTimeLeft(totalSeconds);
     }
   }, [totalSeconds]);
+  
+  const handlePlayDescription = useCallback(async () => {
+    if (isSpeaking) return;
+    setIsSpeaking(true);
+    setSpeechError(null);
+    try {
+      const textToSpeak = `${ejercicio.nombre}. ${ejercicio.descripcion}`;
+      const audioData = await generateSpeech(textToSpeak);
+      await playAudioFromBase64(audioData);
+    } catch (error) {
+      console.error(error);
+      setSpeechError('Voz no disponible.');
+    } finally {
+      setIsSpeaking(false);
+    }
+  }, [ejercicio.nombre, ejercicio.descripcion, isSpeaking]);
+
 
   // Render original card if duration is not in seconds (e.g., reps-based)
   if (totalSeconds === null) {
@@ -116,10 +137,21 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({ ejercicio }) => {
           <h4 className="font-semibold text-lg text-gray-800">{ejercicio.nombre}</h4>
           <p className="text-gray-600 text-sm mt-1">{ejercicio.descripcion}</p>
         </div>
-        <div className="mt-4 flex items-center text-indigo-600 text-sm font-medium">
-          <ClockIcon className="h-5 w-5 mr-2" />
-          <span>{ejercicio.duracion}</span>
+        <div className="mt-4 flex items-center justify-between">
+          <div className="flex items-center text-indigo-600 text-sm font-medium">
+            <ClockIcon className="h-5 w-5 mr-2" />
+            <span>{ejercicio.duracion}</span>
+          </div>
+          <button
+            onClick={handlePlayDescription}
+            disabled={isSpeaking}
+            aria-label="Escuchar descripción del ejercicio"
+            className="text-indigo-600 hover:text-indigo-800 transition-colors disabled:opacity-50 disabled:cursor-wait p-1 rounded-full hover:bg-indigo-100"
+          >
+            {isSpeaking ? <SpinnerIcon className="w-6 h-6" /> : <SpeakerWaveIcon className="w-6 h-6" />}
+          </button>
         </div>
+         {speechError && <p className="text-red-500 text-xs mt-1 text-right">{speechError}</p>}
       </div>
     );
   }
@@ -129,8 +161,19 @@ const ExerciseCard: React.FC<ExerciseCardProps> = ({ ejercicio }) => {
   // Render timer card
   return (
     <div className="bg-gray-50 p-4 rounded-lg border border-gray-200 h-full flex flex-col items-center justify-between text-center">
-      <h4 className="font-semibold text-lg text-gray-800 h-12">{ejercicio.nombre}</h4>
-      <p className="text-gray-600 text-sm my-2">{ejercicio.descripcion}</p>
+        <div className="w-full flex justify-between items-start gap-2">
+            <h4 className="font-semibold text-lg text-gray-800 text-left flex-1 h-12">{ejercicio.nombre}</h4>
+            <button
+                onClick={handlePlayDescription}
+                disabled={isSpeaking}
+                aria-label="Escuchar descripción del ejercicio"
+                className="text-indigo-600 hover:text-indigo-800 transition-colors disabled:opacity-50 disabled:cursor-wait p-1 rounded-full hover:bg-indigo-100 flex-shrink-0"
+            >
+                {isSpeaking ? <SpinnerIcon className="w-6 h-6" /> : <SpeakerWaveIcon className="w-6 h-6" />}
+            </button>
+        </div>
+        {speechError && <p className="text-red-500 text-xs w-full text-right -mt-2 mb-2">{speechError}</p>}
+        <p className="text-gray-600 text-sm my-2">{ejercicio.descripcion}</p>
       
       <div className="my-4">
         <CircularProgress progress={progress} timeLeft={timeLeft} isCompleted={isCompleted} />

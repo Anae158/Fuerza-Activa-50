@@ -123,8 +123,8 @@ const App: React.FC = () => {
         {`@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }`}
       </style>
       <header className="bg-white shadow-sm">
-        <div className="container mx-auto px-4 py-2 flex items-center justify-center text-center">
-          <Logo className="h-28" />
+        <div className="container mx-auto px-4 py-4 flex items-center justify-center text-center">
+          <Logo />
         </div>
       </header>
 

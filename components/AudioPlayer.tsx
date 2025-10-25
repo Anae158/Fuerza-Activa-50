@@ -7,14 +7,20 @@ const AudioPlayer: React.FC = () => {
   const [isPlaying, setIsPlaying] = useState(false);
   const audioRef = useRef<HTMLAudioElement>(null);
 
-  const togglePlayPause = () => {
-    if (audioRef.current) {
-        if (isPlaying) {
-            audioRef.current.pause();
-        } else {
-            audioRef.current.play().catch(error => console.error("Error playing audio:", error));
-        }
-        setIsPlaying(!isPlaying);
+  const togglePlayPause = async () => {
+    if (!audioRef.current) return;
+
+    if (isPlaying) {
+      audioRef.current.pause();
+      setIsPlaying(false);
+    } else {
+      try {
+        await audioRef.current.play();
+        setIsPlaying(true);
+      } catch (error) {
+        console.error("Error al reproducir el audio:", error);
+        setIsPlaying(false);
+      }
     }
   };
 
