@@ -16,3 +16,8 @@ export interface Plan {
 }
 
 export type Nivel = 'Nivel 1: Iniciación' | 'Nivel 2: Medio' | 'Nivel 3: Avanzado';
+
+export interface HistoryEntry {
+  date: string; // YYYY-MM-DD
+  level: Nivel;
+}

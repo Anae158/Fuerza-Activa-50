@@ -1,12 +1,16 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import type { Plan, Nivel } from './types';
+import type { Plan, Nivel, HistoryEntry } from './types';
 import { generateWorkoutPlan } from './services/geminiService';
+import * as historyService from './services/historyService';
 import LevelSelector from './components/LevelSelector';
 import WorkoutPlan from './components/WorkoutPlan';
 import LoadingSpinner from './components/LoadingSpinner';
-import { DumbbellIcon, RefreshIcon, TrashIcon } from './components/icons';
+import { RefreshIcon, TrashIcon, CheckCircleIcon, TrophyIcon } from './components/icons';
 import AudioPlayer from './components/AudioPlayer';
 import SplashScreen from './components/SplashScreen';
+import WorkoutHistory from './components/WorkoutHistory';
+import Logo from './components/Logo';
+
 
 const App: React.FC = () => {
   const [plan, setPlan] = useState<Plan | null>(null);
@@ -14,6 +18,16 @@ const App: React.FC = () => {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [showSplash, setShowSplash] = useState<boolean>(true);
+  const [history, setHistory] = useState<HistoryEntry[]>([]);
+  const [isTodayCompleted, setIsTodayCompleted] = useState<boolean>(false);
+
+  const getTodayDateString = () => {
+    // This creates a date string in YYYY-MM-DD format based on the user's local timezone,
+    // which is more reliable than toISOString() for this use case.
+    const date = new Date();
+    date.setMinutes(date.getMinutes() - date.getTimezoneOffset());
+    return date.toISOString().split('T')[0];
+  }
 
   const fetchPlan = useCallback(async (selectedNivel: Nivel) => {
     setIsLoading(true);
@@ -40,7 +54,13 @@ const App: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    if (showSplash) return; // Don't load plan until splash is hidden
+    if (showSplash) return; 
+
+    // Load history on initial mount after splash
+    const loadedHistory = historyService.getHistory();
+    setHistory(loadedHistory);
+    const today = getTodayDateString();
+    setIsTodayCompleted(loadedHistory.some(entry => entry.date === today));
 
     try {
       const savedPlanJSON = localStorage.getItem('workoutPlan');
@@ -76,11 +96,25 @@ const App: React.FC = () => {
   };
 
   const handleClearPlan = () => {
-    if (window.confirm('¿Estás segura de que quieres borrar el plan guardado? Se generará uno nuevo de iniciación.')) {
+    if (window.confirm('¿Estás segura de que quieres borrar el plan guardado y el historial? Se generará uno nuevo de iniciación.')) {
       localStorage.removeItem('workoutPlan');
       localStorage.removeItem('workoutLevel');
+      localStorage.removeItem('workoutHistory');
       window.location.reload();
     }
+  };
+
+  const handleMarkDayAsComplete = () => {
+    const today = getTodayDateString();
+    if (isTodayCompleted) return;
+
+    const newEntry: HistoryEntry = {
+      date: today,
+      level: nivel,
+    };
+    const updatedHistory = historyService.addHistoryEntry(newEntry);
+    setHistory(updatedHistory);
+    setIsTodayCompleted(true);
   };
 
   const renderMainApp = () => (
@@ -89,11 +123,8 @@ const App: React.FC = () => {
         {`@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }`}
       </style>
       <header className="bg-white shadow-sm">
-        <div className="container mx-auto px-4 py-5 flex items-center justify-center text-center">
-           <DumbbellIcon className="h-8 w-8 text-indigo-500 mr-3"/>
-          <h1 className="text-2xl md:text-3xl font-bold text-gray-800">
-            Fuerza Activa 50+
-          </h1>
+        <div className="container mx-auto px-4 py-2 flex items-center justify-center text-center">
+          <Logo className="h-28" />
         </div>
       </header>
 
@@ -113,17 +144,46 @@ const App: React.FC = () => {
           <button
             onClick={handleClearPlan}
             className="inline-flex items-center justify-center w-full sm:w-auto px-5 py-2.5 border border-transparent text-sm font-medium rounded-lg shadow-sm text-red-700 bg-red-100 hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-all transform hover:scale-105"
-            aria-label="Borrar el plan de ejercicios guardado"
+            aria-label="Borrar el plan de ejercicios guardado y el historial"
           >
             <TrashIcon className="h-5 w-5 mr-2" />
-            Borrar Plan Guardado
+            Borrar Datos
           </button>
         </div>
+
+        <WorkoutHistory history={history} />
 
         <div className="mt-8">
           {isLoading && <LoadingSpinner />}
           {error && <div className="text-center text-red-500 bg-red-100 p-4 rounded-lg">{error}</div>}
-          {plan && !isLoading && <WorkoutPlan plan={plan} />}
+          {plan && !isLoading && (
+            <>
+              <WorkoutPlan plan={plan} />
+              <div className="mt-10 text-center">
+                <button
+                  onClick={handleMarkDayAsComplete}
+                  disabled={isTodayCompleted}
+                  className="inline-flex items-center justify-center w-full sm:w-auto px-8 py-4 border border-transparent text-lg font-medium rounded-full shadow-lg text-white bg-green-500 hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-all transform hover:scale-105 disabled:bg-gray-400 disabled:cursor-not-allowed disabled:scale-100"
+                  aria-label="Marcar el día como completado"
+                >
+                  {isTodayCompleted ? (
+                    <>
+                      <CheckCircleIcon className="h-6 w-6 mr-3" />
+                      ¡Día Completado!
+                    </>
+                  ) : (
+                    <>
+                      <TrophyIcon className="h-6 w-6 mr-3" />
+                       Marcar Día como Completado
+                    </>
+                  )}
+                </button>
+                {isTodayCompleted && (
+                    <p className="text-gray-600 mt-3 animate-fade-in-up">¡Felicidades! Vuelve mañana por tu siguiente rutina.</p>
+                )}
+              </div>
+            </>
+          )}
         </div>
       </main>
 
