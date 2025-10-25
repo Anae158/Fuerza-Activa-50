@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { PlayIcon, PauseIcon, MusicIcon } from './icons';
 
-const AUDIO_URL = 'https://cdn.pixabay.com/download/audio/2022/10/19/audio_b299e71569.mp3';
+const AUDIO_URL = 'https://archive.org/download/cinematic-background-music-for-video-and-vlogs-by-tunestogo/Music%20For%20Video%20Library.mp3';
 
 const AudioPlayer: React.FC = () => {
   const [isPlaying, setIsPlaying] = useState(false);
