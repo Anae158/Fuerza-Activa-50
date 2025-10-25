@@ -4,14 +4,16 @@ import { generateWorkoutPlan } from './services/geminiService';
 import LevelSelector from './components/LevelSelector';
 import WorkoutPlan from './components/WorkoutPlan';
 import LoadingSpinner from './components/LoadingSpinner';
-import { DumbbellIcon, SparklesIcon, RefreshIcon, TrashIcon } from './components/icons';
+import { DumbbellIcon, RefreshIcon, TrashIcon } from './components/icons';
 import AudioPlayer from './components/AudioPlayer';
+import SplashScreen from './components/SplashScreen';
 
 const App: React.FC = () => {
   const [plan, setPlan] = useState<Plan | null>(null);
   const [nivel, setNivel] = useState<Nivel>('Nivel 1: Iniciación');
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [showSplash, setShowSplash] = useState<boolean>(true);
 
   const fetchPlan = useCallback(async (selectedNivel: Nivel) => {
     setIsLoading(true);
@@ -31,6 +33,15 @@ const App: React.FC = () => {
   }, []);
 
   useEffect(() => {
+    const timer = setTimeout(() => {
+      setShowSplash(false);
+    }, 3500); // Display splash screen for 3.5 seconds
+    return () => clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    if (showSplash) return; // Don't load plan until splash is hidden
+
     try {
       const savedPlanJSON = localStorage.getItem('workoutPlan');
       
@@ -39,22 +50,18 @@ const App: React.FC = () => {
         const savedLevel = localStorage.getItem('workoutLevel') as Nivel | null;
 
         setPlan(savedPlan);
-        // Si se guarda un nivel, úsalo. De lo contrario, usa el de iniciación por defecto.
         setNivel(savedLevel || 'Nivel 1: Iniciación');
         setIsLoading(false);
       } else {
-        // No se encontró ningún plan, genera uno nuevo.
         fetchPlan('Nivel 1: Iniciación');
       }
     } catch (e) {
       console.error("Fallo al leer el plan desde localStorage", e);
-      // Borra los datos potencialmente corruptos y busca un plan nuevo
       localStorage.removeItem('workoutPlan');
       localStorage.removeItem('workoutLevel');
       fetchPlan('Nivel 1: Iniciación');
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [showSplash, fetchPlan]);
 
 
   const handleLevelChange = (newNivel: Nivel) => {
@@ -76,8 +83,11 @@ const App: React.FC = () => {
     }
   };
 
-  return (
-    <div className="min-h-screen bg-gray-50 text-gray-800">
+  const renderMainApp = () => (
+    <div style={{ animation: 'fadeIn 1s ease-in-out' }}>
+       <style>
+        {`@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }`}
+      </style>
       <header className="bg-white shadow-sm">
         <div className="container mx-auto px-4 py-5 flex items-center justify-center text-center">
            <DumbbellIcon className="h-8 w-8 text-indigo-500 mr-3"/>
@@ -88,16 +98,7 @@ const App: React.FC = () => {
       </header>
 
       <main className="container mx-auto p-4 md:p-8">
-        <div className="bg-white p-6 rounded-2xl shadow-lg max-w-4xl mx-auto mb-8 text-center border border-gray-100">
-          <SparklesIcon className="h-10 w-10 text-amber-400 mx-auto mb-3" />
-          <h2 className="text-xl md:text-2xl font-semibold text-indigo-600 mb-2">¡Tu guía de bienestar diario!</h2>
-          <p className="text-gray-600">
-            Selecciona tu nivel y descubre una rutina de fuerza diseñada para ti. Cuatro bloques cortos para mantenerte activa, fuerte y llena de energía durante todo el día.
-          </p>
-        </div>
-
         <AudioPlayer />
-
         <LevelSelector selectedLevel={nivel} onSelectLevel={handleLevelChange} />
 
         <div className="flex flex-col sm:flex-row justify-center items-center space-y-3 sm:space-y-0 sm:space-x-4 mt-6">
@@ -129,6 +130,12 @@ const App: React.FC = () => {
       <footer className="text-center py-6 mt-8 text-gray-500 text-sm">
         <p>&copy; {new Date().getFullYear()} Fuerza Activa 50+. Creado con ❤️ para mujeres imparables.</p>
       </footer>
+    </div>
+  );
+
+  return (
+    <div className="min-h-screen bg-gray-50 text-gray-800">
+       {showSplash ? <SplashScreen /> : renderMainApp()}
     </div>
   );
 };

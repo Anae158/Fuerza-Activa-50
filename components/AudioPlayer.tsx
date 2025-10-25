@@ -27,7 +27,10 @@ const AudioPlayer: React.FC = () => {
           <p className="text-sm text-gray-500">Relajante y motivadora</p>
         </div>
       </div>
-      <audio ref={audioRef} src={AUDIO_URL} loop />
+      <audio ref={audioRef} loop preload="auto">
+        <source src={AUDIO_URL} type="audio/mpeg" />
+        Tu navegador no soporta el elemento de audio.
+      </audio>
       <button
         onClick={togglePlayPause}
         aria-label={isPlaying ? 'Pausar música' : 'Reproducir música'}
