@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { PlayIcon, PauseIcon, MusicIcon } from './icons';
 
-const AUDIO_URL = 'https://cdn.pixabay.com/audio/2023/10/06/audio_2487313c2b.mp3';
+const AUDIO_URL = 'https://cdn.pixabay.com/download/audio/2022/08/03/audio_5832c6b410.mp3';
 
 const AudioPlayer: React.FC = () => {
   const [isPlaying, setIsPlaying] = useState(false);
