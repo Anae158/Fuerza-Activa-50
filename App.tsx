@@ -39,7 +39,7 @@ const App: React.FC = () => {
       localStorage.setItem('workoutPlan', JSON.stringify(newPlan));
       localStorage.setItem('workoutLevel', selectedNivel);
     } catch (err) {
-      setError('No se pudo generar el plan de ejercicios. Por favor, inténtalo de nuevo más tarde.');
+      setError((err as Error).message);
       console.error(err);
     } finally {
       setIsLoading(false);

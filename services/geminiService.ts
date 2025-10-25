@@ -1,15 +1,10 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import type { Nivel, Plan } from '../types';
 
-// FIX: As per the coding guidelines, the API key must be obtained exclusively from `process.env.API_KEY`. This also fixes the TypeScript error `Property 'env' does not exist on type 'ImportMeta'`.
 const API_KEY = process.env.API_KEY;
 
-if (!API_KEY) {
-  // FIX: Updated the error message to reflect the correct environment variable name.
-  throw new Error("API_KEY environment variable not set. Please configure it in your deployment settings.");
-}
-
-const ai = new GoogleGenAI({ apiKey: API_KEY });
+// Initialize ai only if the API key is available.
+const ai = API_KEY ? new GoogleGenAI({ apiKey: API_KEY }) : null;
 
 const responseSchema = {
   type: Type.OBJECT,
@@ -86,6 +81,12 @@ const buildPrompt = (level: Nivel): string => {
 };
 
 export const generateWorkoutPlan = async (level: Nivel): Promise<Plan> => {
+    if (!ai) {
+      const errorMessage = "La configuración de la API no está completa. La aplicación no puede generar nuevos planes de ejercicios en este momento.";
+      console.error(errorMessage);
+      throw new Error(errorMessage);
+    }
+
     try {
         const response = await ai.models.generateContent({
             model: "gemini-2.5-flash",
